@@ -6,3 +6,5 @@ speechrecognition
 scikit-learn
 numpy
 python-multipart
+transformers
+huggingface_hub[hf_xet]

@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+textract
+moviepy
+speechrecognition
+scikit-learn
+numpy
+python-multipart

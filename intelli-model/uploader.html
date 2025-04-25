@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Upload Knowledge & Chat</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    form {
+      margin-bottom: 30px;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    input[type="text"], input[type="file"] {
+      width: 100%;
+      padding: 8px;
+      margin: 10px 0;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #response {
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      min-height: 50px;
+      background-color: #f9f9f9;
+    }
+    .status {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      display: none;
+    }
+    .success {
+      background-color: #dff0d8;
+      color: #3c763d;
+    }
+    .error {
+      background-color: #f2dede;
+      color: #a94442;
+    }
+  </style>
+</head>
+<body>
+  <h1>Knowledge Base Training & Chat</h1>
+  
+  <div id="file-status" class="status"></div>
+  <div id="url-status" class="status"></div>
+
+  <form id="file-form" enctype="multipart/form-data">
+    <h2>Upload Document</h2>
+    <p>Train the model with PDF, DOCX, TXT, SRT, MP4, or MKV files.</p>
+    <input type="file" id="file" name="file" accept=".txt,.pdf,.docx,.mp4,.mkv,.srt" />
+    <button type="submit">Upload & Train</button>
+  </form>
+
+  <form id="url-form">
+    <h2>Upload Knowledge from URL</h2>
+    <p>Extract text from a website and train the model with it.</p>
+    <label for="url">Website URL:</label>
+    <input type="text" id="url" name="url" placeholder="https://example.com" required>
+    <button type="submit">Extract & Train from URL</button>
+  </form>
+
+  <form id="chat-form">
+    <h2>Chat with the Model</h2>
+    <p>Ask questions about the uploaded knowledge.</p>
+    <label for="query">Your Message:</label>
+    <input type="text" id="query" name="query" placeholder="Ask something about the uploaded content" required>
+    <button type="submit">Send</button>
+  </form>
+
+  <h2>Response:</h2>
+  <div id="response"></div>
+
+  <script>
+    // File upload form handler
+    document.getElementById("file-form").onsubmit = async (e) => {
+      e.preventDefault();
+      const fileStatus = document.getElementById("file-status");
+      fileStatus.style.display = "block";
+      fileStatus.textContent = "Uploading and training...";
+      fileStatus.className = "status";
+      
+      const formData = new FormData();
+      const fileField = document.getElementById("file");
+      
+      if (fileField.files.length === 0) {
+        fileStatus.textContent = "Please select a file first.";
+        fileStatus.className = "status error";
+        return;
+      }
+      
+      formData.append("file", fileField.files[0]);
+      
+      try {
+        const response = await fetch('/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          fileStatus.textContent = result.status || "Upload successful!";
+          fileStatus.className = "status success";
+        } else {
+          fileStatus.textContent = result.error || "Upload failed.";
+          fileStatus.className = "status error";
+        }
+      } catch (error) {
+        fileStatus.textContent = "Error: " + error.message;
+        fileStatus.className = "status error";
+      }
+    };
+
+    // URL upload form handler
+    document.getElementById("url-form").onsubmit = async (e) => {
+      e.preventDefault();
+      const urlStatus = document.getElementById("url-status");
+      urlStatus.style.display = "block";
+      urlStatus.textContent = "Extracting and training...";
+      urlStatus.className = "status";
+      
+      const urlField = document.getElementById("url");
+      
+      try {
+        const response = await fetch('/upload-url', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ url: urlField.value }),
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          urlStatus.textContent = result.status || "URL processing successful!";
+          urlStatus.className = "status success";
+        } else {
+          urlStatus.textContent = result.error || "URL processing failed.";
+          urlStatus.className = "status error";
+        }
+      } catch (error) {
+        urlStatus.textContent = "Error: " + error.message;
+        urlStatus.className = "status error";
+      }
+    };
+
+    // Chat form handler
+    document.getElementById("chat-form").onsubmit = async (e) => {
+      e.preventDefault();
+      const responseElement = document.getElementById("response");
+      responseElement.textContent = "Thinking...";
+      
+      const query = document.getElementById("query").value;
+      
+      try {
+        const response = await fetch('/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ query: query }),
+        });
+        
+        const data = await response.json();
+        responseElement.textContent = data.response || "No response received.";
+      } catch (error) {
+        responseElement.textContent = "Error: " + error.message;
+      }
+    };
+  </script>
+</body>
+</html>

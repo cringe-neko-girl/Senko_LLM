@@ -1,6 +1,7 @@
 import os
 import pickle
-import json, random
+import json
+import random
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import TfidfVectorizer
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
@@ -29,7 +30,7 @@ def load_model():
     # Load model data from model.bin if it exists
     if os.path.exists(MODEL_PATH):
         try:
-            with open(MODEL_PATH, "rb") as f:
+            with open(MODEL_PATH, "rb") as f:  # Open in binary mode
                 loaded = pickle.load(f)
                 if "corpus" in loaded:
                     model["corpus"] = loaded["corpus"]
@@ -39,7 +40,7 @@ def load_model():
                     model["vectorizer"] = loaded["vectorizer"]
         except Exception as e:
             print(f"Error loading model: {e}")
-    
+
     # Load data from knowledge.json into model
     if knowledge_data:
         for entry in knowledge_data:
@@ -48,13 +49,27 @@ def load_model():
                 model["corpus"].append(content)
         update_vectors()
     
+    # If the model was corrupted, rebuild it from the knowledge
+    if not model["corpus"]:
+        print("Model corrupted or empty. Rebuilding from knowledge store...")
+        rebuild_model_from_knowledge(knowledge_data)
+
     return model
+
+def rebuild_model_from_knowledge(knowledge_data):
+    model["corpus"] = []
+    for entry in knowledge_data:
+        content = entry["content"]
+        if content not in model["corpus"]:
+            model["corpus"].append(content)
+    update_vectors()
+    save_model(model)
 
 def save_model(_model):
     # Save the model as a .bin file
     os.makedirs("models", exist_ok=True)
     try:
-        with open(MODEL_PATH, "wb") as f:
+        with open(MODEL_PATH, "wb") as f:  # Open in binary mode
             pickle.dump({
                 "corpus": _model["corpus"],
                 "vectors": _model["vectors"],
@@ -178,6 +193,7 @@ def jaccard_similarity(a, b):
     sa, sb = set(a.lower().split()), set(b.lower().split())
     return len(sa & sb) / max(1, len(sa | sb))
 
+# Ensure vectors are updated if necessary
 def update_vectors():
     if model["corpus"]:
         if model["vectorizer"] is None:  # Only re-fit if no vectorizer exists

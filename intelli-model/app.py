@@ -1,3 +1,6 @@
+import os
+#os.system("pip install 'pip<24.1' && pip install -r requirements.txt")
+
 from fastapi import FastAPI, UploadFile
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
@@ -6,6 +9,7 @@ from trainer import train_model
 from model import load_model, save_model, generate_reply
 import shutil, os, json, socket
 import uvicorn
+
 
 app = FastAPI()
 model = load_model()
